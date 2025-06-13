@@ -7,6 +7,15 @@ class WellnessLogger {
         this.currentDeleteId = null;
         this.currentView = 'list';
         this.currentDate = new Date();
+        this.currentFilters = {
+            searchText: '',
+            type: '',
+            dateRange: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+        this.allEntries = []; // Cache for filtering
+        this.filteredEntries = []; // Cache for filtered results
         this.init();
     }
 
@@ -14,12 +23,14 @@ class WellnessLogger {
         this.bindEvents();
         this.renderEntries();
         this.renderCalendar();
+        this.initMobileEnhancements();
     }
 
     bindEvents() {
         // View toggle buttons
         document.getElementById('list-view-btn').addEventListener('click', () => this.switchView('list'));
         document.getElementById('calendar-view-btn').addEventListener('click', () => this.switchView('calendar'));
+        document.getElementById('analytics-view-btn').addEventListener('click', () => this.switchView('analytics'));
 
         // Quick log buttons
         document.getElementById('log-exercise').addEventListener('click', () => this.logExercise());
@@ -27,6 +38,8 @@ class WellnessLogger {
         document.getElementById('log-medication').addEventListener('click', () => this.logMedication());
 
         // Data management buttons
+        document.getElementById('export-csv').addEventListener('click', () => this.exportCSV());
+        document.getElementById('export-filtered-csv').addEventListener('click', () => this.exportFilteredCSV());
         document.getElementById('export-data').addEventListener('click', () => this.exportData());
         document.getElementById('import-data').addEventListener('click', () => this.importData());
         document.getElementById('file-input').addEventListener('change', (e) => this.handleFileImport(e));
@@ -47,6 +60,14 @@ class WellnessLogger {
         // Day modal events
         document.getElementById('close-day-modal').addEventListener('click', () => this.closeDayModal());
 
+        // Search and filter events
+        document.getElementById('search-input').addEventListener('input', (e) => this.handleSearch(e.target.value));
+        document.getElementById('clear-search').addEventListener('click', () => this.clearSearch());
+        document.getElementById('type-filter').addEventListener('change', (e) => this.handleTypeFilter(e.target.value));
+        document.getElementById('date-range-filter').addEventListener('change', (e) => this.handleDateRangeFilter(e.target.value));
+        document.getElementById('apply-date-range').addEventListener('click', () => this.applyCustomDateRange());
+        document.getElementById('clear-filters').addEventListener('click', () => this.clearAllFilters());
+
         // Close modals when clicking outside
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
@@ -64,13 +85,17 @@ class WellnessLogger {
         // Update button states
         document.getElementById('list-view-btn').classList.toggle('active', view === 'list');
         document.getElementById('calendar-view-btn').classList.toggle('active', view === 'calendar');
+        document.getElementById('analytics-view-btn').classList.toggle('active', view === 'analytics');
         
         // Show/hide sections
         document.getElementById('list-section').style.display = view === 'list' ? 'block' : 'none';
         document.getElementById('calendar-section').style.display = view === 'calendar' ? 'block' : 'none';
+        document.getElementById('analytics-section').style.display = view === 'analytics' ? 'block' : 'none';
         
         if (view === 'calendar') {
             this.renderCalendar();
+        } else if (view === 'analytics') {
+            this.renderAnalytics();
         }
     }
 
@@ -364,6 +389,8 @@ class WellnessLogger {
         this.renderEntries();
         if (this.currentView === 'calendar') {
             this.renderCalendar();
+        } else if (this.currentView === 'analytics') {
+            this.renderAnalytics();
         }
         this.showSuccessMessage(`${entry.type} logged successfully!`);
     }
@@ -393,6 +420,8 @@ class WellnessLogger {
         this.renderEntries();
         if (this.currentView === 'calendar') {
             this.renderCalendar();
+        } else if (this.currentView === 'analytics') {
+            this.renderAnalytics();
         }
         this.closeConfirmModal();
         this.showSuccessMessage('Entry deleted successfully!');
@@ -486,12 +515,142 @@ class WellnessLogger {
         this.renderEntries();
         if (this.currentView === 'calendar') {
             this.renderCalendar();
+        } else if (this.currentView === 'analytics') {
+            this.renderAnalytics();
         }
         this.closeEditModal();
         this.showSuccessMessage('Entry updated successfully!');
     }
 
     // Data Import/Export
+    exportCSV() {
+        const data = this.getData();
+        
+        if (data.length === 0) {
+            this.showErrorMessage('No data to export. Please add some entries first.');
+            return;
+        }
+
+        // Create CSV content
+        const csvContent = this.generateCSVContent(data);
+        
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        // Generate filename with date range
+        const sortedData = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const startDate = new Date(sortedData[0].timestamp).toISOString().split('T')[0];
+        const endDate = new Date(sortedData[sortedData.length - 1].timestamp).toISOString().split('T')[0];
+        
+        link.download = `wellness_log_${startDate}_to_${endDate}.csv`;
+        link.click();
+        
+        this.showSuccessMessage(`CSV exported successfully! ${data.length} entries included.`);
+    }
+
+    exportFilteredCSV() {
+        if (this.filteredEntries.length === 0) {
+            this.showErrorMessage('No filtered data to export. Please adjust your filters.');
+            return;
+        }
+
+        // Create CSV content from filtered data
+        const csvContent = this.generateCSVContent(this.filteredEntries);
+        
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        // Generate filename with filter description
+        const today = new Date().toISOString().split('T')[0];
+        const filterDesc = this.getFilterDescription();
+        link.download = `wellness_log_filtered_${filterDesc}_${today}.csv`;
+        link.click();
+        
+        this.showSuccessMessage(`Filtered CSV exported successfully! ${this.filteredEntries.length} entries included.`);
+    }
+
+    getFilterDescription() {
+        const parts = [];
+        
+        if (this.currentFilters.type) {
+            parts.push(this.currentFilters.type.toLowerCase().replace(' ', ''));
+        }
+        
+        if (this.currentFilters.dateRange) {
+            parts.push(this.currentFilters.dateRange);
+        } else if (this.currentFilters.dateFrom || this.currentFilters.dateTo) {
+            if (this.currentFilters.dateFrom && this.currentFilters.dateTo) {
+                parts.push(`${this.currentFilters.dateFrom}_to_${this.currentFilters.dateTo}`);
+            } else if (this.currentFilters.dateFrom) {
+                parts.push(`from_${this.currentFilters.dateFrom}`);
+            } else {
+                parts.push(`to_${this.currentFilters.dateTo}`);
+            }
+        }
+        
+        if (this.currentFilters.searchText) {
+            parts.push('search');
+        }
+        
+        return parts.length > 0 ? parts.join('_') : 'custom';
+    }
+
+    generateCSVContent(data) {
+        // Define CSV headers - medical professional friendly
+        const headers = [
+            'Date',
+            'Time',
+            'Type',
+            'Duration',
+            'Dosage',
+            'Comments'
+        ];
+        
+        // Start with headers
+        let csvContent = headers.join(',') + '\n';
+        
+        // Sort data by timestamp (oldest first for medical review)
+        const sortedData = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        // Add data rows
+        sortedData.forEach(entry => {
+            const date = new Date(entry.timestamp);
+            const formattedDate = date.toLocaleDateString('en-US'); // MM/DD/YYYY format
+            const formattedTime = date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            
+            const row = [
+                this.escapeCSVField(formattedDate),
+                this.escapeCSVField(formattedTime),
+                this.escapeCSVField(entry.type),
+                this.escapeCSVField(entry.details.duration || ''),
+                this.escapeCSVField(entry.details.dosage || ''),
+                this.escapeCSVField(entry.details.comments || '')
+            ];
+            
+            csvContent += row.join(',') + '\n';
+        });
+        
+        return csvContent;
+    }
+
+    escapeCSVField(field) {
+        // Handle CSV field escaping - wrap in quotes if contains comma, quote, or newline
+        const fieldStr = String(field);
+        if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+            // Escape quotes by doubling them and wrap in quotes
+            return '"' + fieldStr.replace(/"/g, '""') + '"';
+        }
+        return fieldStr;
+    }
+
     exportData() {
         const data = this.getData();
         const dataStr = JSON.stringify(data, null, 2);
@@ -534,6 +693,8 @@ class WellnessLogger {
                 this.renderEntries();
                 if (this.currentView === 'calendar') {
                     this.renderCalendar();
+                } else if (this.currentView === 'analytics') {
+                    this.renderAnalytics();
                 }
                 this.showSuccessMessage(`Successfully imported ${importedData.length} entries!`);
                 
@@ -548,33 +709,8 @@ class WellnessLogger {
 
     // UI Rendering
     renderEntries() {
-        const data = this.getData();
-        const container = document.getElementById('entries-container');
-        
-        if (data.length === 0) {
-            container.innerHTML = '<p class="no-entries">No entries yet. Start logging your wellness events!</p>';
-            return;
-        }
-
-        // Sort by timestamp (newest first)
-        const sortedData = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        
-        container.innerHTML = sortedData.map(entry => this.createEntryHTML(entry)).join('');
-        
-        // Bind event listeners for edit and delete buttons
-        container.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.target.dataset.id;
-                this.editEntry(id);
-            });
-        });
-        
-        container.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.target.dataset.id;
-                this.deleteEntry(id);
-            });
-        });
+        this.allEntries = this.getData();
+        this.applyFilters();
     }
 
     createEntryHTML(entry) {
@@ -630,44 +766,587 @@ class WellnessLogger {
         return details.length > 0 ? details.join('') : '<div class="entry-detail">No additional details</div>';
     }
 
-    // Utility Functions
-    showSuccessMessage(message) {
-        this.showMessage(message, 'success');
+    // Search and Filter Functions
+    handleSearch(searchText) {
+        this.currentFilters.searchText = searchText.toLowerCase();
+        this.applyFilters();
     }
 
-    showErrorMessage(message) {
-        this.showMessage(message, 'error');
+    clearSearch() {
+        document.getElementById('search-input').value = '';
+        this.currentFilters.searchText = '';
+        this.applyFilters();
     }
 
-    showMessage(message, type) {
-        // Create a temporary message element
-        const messageEl = document.createElement('div');
-        messageEl.textContent = message;
-        messageEl.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 6px;
-            color: white;
-            font-weight: 500;
-            z-index: 10000;
-            animation: slideIn 0.3s ease;
-            background: ${type === 'success' ? '#48bb78' : '#e53e3e'};
-        `;
+    handleTypeFilter(type) {
+        this.currentFilters.type = type;
+        this.applyFilters();
+    }
+
+    handleDateRangeFilter(range) {
+        this.currentFilters.dateRange = range;
+        // Clear custom date range when using quick filters
+        if (range) {
+            document.getElementById('date-from').value = '';
+            document.getElementById('date-to').value = '';
+            this.currentFilters.dateFrom = '';
+            this.currentFilters.dateTo = '';
+        }
+        this.applyFilters();
+    }
+
+    applyCustomDateRange() {
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
         
-        document.body.appendChild(messageEl);
+        if (dateFrom || dateTo) {
+            this.currentFilters.dateFrom = dateFrom;
+            this.currentFilters.dateTo = dateTo;
+            // Clear quick date range filter
+            document.getElementById('date-range-filter').value = '';
+            this.currentFilters.dateRange = '';
+            this.applyFilters();
+        }
+    }
+
+    clearAllFilters() {
+        // Reset all filter controls
+        document.getElementById('search-input').value = '';
+        document.getElementById('type-filter').value = '';
+        document.getElementById('date-range-filter').value = '';
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
         
-        // Remove after 3 seconds
-        setTimeout(() => {
-            messageEl.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => {
-                if (messageEl.parentNode) {
-                    messageEl.parentNode.removeChild(messageEl);
+        // Reset filter state
+        this.currentFilters = {
+            searchText: '',
+            type: '',
+            dateRange: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+        
+        this.applyFilters();
+    }
+
+    applyFilters() {
+        const filteredEntries = this.filterEntries(this.allEntries);
+        this.filteredEntries = filteredEntries; // Store for export
+        this.renderFilteredEntries(filteredEntries);
+        this.updateFilterStatus(filteredEntries.length, this.allEntries.length);
+    }
+
+    filterEntries(entries) {
+        return entries.filter(entry => {
+            // Text search filter
+            if (this.currentFilters.searchText) {
+                const searchableText = `${entry.type} ${entry.details.comments || ''}`.toLowerCase();
+                if (!searchableText.includes(this.currentFilters.searchText)) {
+                    return false;
                 }
-            }, 300);
-        }, 3000);
+            }
+
+            // Type filter
+            if (this.currentFilters.type && entry.type !== this.currentFilters.type) {
+                return false;
+            }
+
+            // Date range filters
+            const entryDate = new Date(entry.timestamp);
+            
+            // Quick date range filter
+            if (this.currentFilters.dateRange) {
+                const now = new Date();
+                let startDate;
+                
+                switch (this.currentFilters.dateRange) {
+                    case 'today':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        break;
+                    case 'last7':
+                        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'last30':
+                        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'thisMonth':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                        break;
+                    case 'lastMonth':
+                        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+                        return entryDate >= lastMonth && entryDate <= lastMonthEnd;
+                }
+                
+                if (startDate && entryDate < startDate) {
+                    return false;
+                }
+            }
+
+            // Custom date range filter
+            if (this.currentFilters.dateFrom) {
+                const fromDate = new Date(this.currentFilters.dateFrom);
+                if (entryDate < fromDate) {
+                    return false;
+                }
+            }
+            
+            if (this.currentFilters.dateTo) {
+                const toDate = new Date(this.currentFilters.dateTo);
+                toDate.setHours(23, 59, 59, 999); // Include the entire day
+                if (entryDate > toDate) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
     }
+
+    updateFilterStatus(filteredCount, totalCount) {
+        const statusElement = document.getElementById('filter-status');
+        const countElement = document.getElementById('filter-count');
+        const filteredExportBtn = document.getElementById('export-filtered-csv');
+        
+        if (filteredCount === totalCount && !this.hasActiveFilters()) {
+            statusElement.style.display = 'none';
+            filteredExportBtn.style.display = 'none';
+        } else {
+            statusElement.style.display = 'block';
+            statusElement.className = filteredCount === 0 ? 'filter-status no-results' : 'filter-status';
+            
+            // Show filtered export button if we have filtered results
+            if (filteredCount > 0 && filteredCount < totalCount) {
+                filteredExportBtn.style.display = 'inline-flex';
+            } else {
+                filteredExportBtn.style.display = 'none';
+            }
+            
+            if (filteredCount === 0) {
+                countElement.textContent = 'No entries match your filters';
+            } else if (filteredCount === totalCount) {
+                countElement.textContent = `Showing all ${totalCount} entries`;
+            } else {
+                countElement.textContent = `Showing ${filteredCount} of ${totalCount} entries`;
+            }
+        }
+    }
+
+    hasActiveFilters() {
+        return !!(this.currentFilters.searchText || 
+                 this.currentFilters.type || 
+                 this.currentFilters.dateRange || 
+                 this.currentFilters.dateFrom || 
+                 this.currentFilters.dateTo);
+    }
+
+    renderFilteredEntries(entries) {
+        const container = document.getElementById('entries-container');
+        
+        if (entries.length === 0) {
+            if (this.hasActiveFilters()) {
+                container.innerHTML = '<p class="no-entries">No entries match your current filters. Try adjusting your search criteria.</p>';
+            } else {
+                container.innerHTML = '<p class="no-entries">No entries yet. Start logging your wellness events!</p>';
+            }
+            return;
+        }
+
+        // Sort by timestamp (newest first)
+        const sortedEntries = entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        container.innerHTML = sortedEntries.map(entry => this.createEntryHTML(entry)).join('');
+        
+        // Bind event listeners for edit and delete buttons
+        container.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.dataset.id;
+                this.editEntry(id);
+            });
+        });
+        
+        container.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.dataset.id;
+                this.deleteEntry(id);
+            });
+        });
+    }
+
+    // Analytics Functions
+    renderAnalytics() {
+        const data = this.getData();
+        
+        // Update all analytics displays
+        this.updateAnalyticsCards(data);
+        this.updateMonthlyStats(data);
+        this.updatePatternStats(data);
+    }
+
+    updateAnalyticsCards(data) {
+        // Exercise streak
+        const exerciseStreak = this.calculateExerciseStreak(data);
+        document.getElementById('exercise-streak').textContent = `${exerciseStreak} ${exerciseStreak === 1 ? 'day' : 'days'}`;
+        
+        // SVT episodes this month
+        const svtThisMonth = this.countEntriesThisMonth(data, 'SVT Episode');
+        document.getElementById('svt-this-month').textContent = svtThisMonth;
+        
+        // Medications this month
+        const medicationsThisMonth = this.countEntriesThisMonth(data, 'Medication');
+        document.getElementById('medications-this-month').textContent = medicationsThisMonth;
+        
+        // Total entries
+        document.getElementById('total-entries').textContent = data.length;
+    }
+
+    updateMonthlyStats(data) {
+        // Average SVT episodes per month
+        const avgSvtMonthly = this.calculateAverageSVTPerMonth(data);
+        document.getElementById('avg-svt-monthly').textContent = avgSvtMonthly.toFixed(1);
+        
+        // Exercise sessions this month
+        const exerciseThisMonth = this.countEntriesThisMonth(data, 'Exercise');
+        document.getElementById('exercise-this-month').textContent = exerciseThisMonth;
+        
+        // Most active day of week
+        const mostActiveDay = this.getMostActiveDay(data);
+        document.getElementById('most-active-day').textContent = mostActiveDay;
+        
+        // Most common SVT time
+        const commonSvtTime = this.getMostCommonSVTTime(data);
+        document.getElementById('common-svt-time').textContent = commonSvtTime;
+    }
+
+    updatePatternStats(data) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const recentData = data.filter(entry => new Date(entry.timestamp) >= thirtyDaysAgo);
+        
+        // SVT Pattern Stats
+        const svtEntries = recentData.filter(entry => entry.type === 'SVT Episode');
+        document.getElementById('svt-last-30').textContent = svtEntries.length;
+        
+        const avgDuration = this.calculateAverageSVTDuration(svtEntries);
+        document.getElementById('avg-svt-duration').textContent = avgDuration;
+        
+        const daysSinceLastSVT = this.getDaysSinceLastEntry(data, 'SVT Episode');
+        document.getElementById('days-since-svt').textContent = daysSinceLastSVT;
+        
+        // Exercise Pattern Stats
+        const exerciseEntries = recentData.filter(entry => entry.type === 'Exercise');
+        document.getElementById('exercise-last-30').textContent = exerciseEntries.length;
+        
+        const weeklyExerciseAvg = (exerciseEntries.length / 4.3).toFixed(1); // 30 days ≈ 4.3 weeks
+        document.getElementById('weekly-exercise-avg').textContent = weeklyExerciseAvg;
+        
+        const daysSinceLastExercise = this.getDaysSinceLastEntry(data, 'Exercise');
+        document.getElementById('days-since-exercise').textContent = daysSinceLastExercise;
+    }
+
+    calculateExerciseStreak(data) {
+        const exerciseEntries = data
+            .filter(entry => entry.type === 'Exercise')
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        if (exerciseEntries.length === 0) return 0;
+        
+        const today = new Date();
+        const todayStr = this.formatDateKey(today);
+        const yesterdayStr = this.formatDateKey(new Date(today.getTime() - 24 * 60 * 60 * 1000));
+        
+        // Group exercises by date
+        const exerciseDates = new Set();
+        exerciseEntries.forEach(entry => {
+            const date = new Date(entry.timestamp);
+            exerciseDates.add(this.formatDateKey(date));
+        });
+        
+        let streak = 0;
+        let currentDate = new Date(today);
+        
+        // Check if today or yesterday has exercise (account for logging delay)
+        if (!exerciseDates.has(todayStr) && !exerciseDates.has(yesterdayStr)) {
+            return 0;
+        }
+        
+        // Start from yesterday if no exercise today
+        if (!exerciseDates.has(todayStr)) {
+            currentDate.setDate(currentDate.getDate() - 1);
+        }
+        
+        // Count consecutive days with exercise
+        while (exerciseDates.has(this.formatDateKey(currentDate))) {
+            streak++;
+            currentDate.setDate(currentDate.getDate() - 1);
+        }
+        
+        return streak;
+    }
+
+    countEntriesThisMonth(data, type) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        return data.filter(entry => {
+            const entryDate = new Date(entry.timestamp);
+            return entry.type === type && entryDate >= startOfMonth;
+        }).length;
+    }
+
+    calculateAverageSVTPerMonth(data) {
+        const svtEntries = data.filter(entry => entry.type === 'SVT Episode');
+        
+        if (svtEntries.length === 0) return 0;
+        
+        // Find date range
+        const sortedEntries = svtEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const firstEntry = new Date(sortedEntries[0].timestamp);
+        const lastEntry = new Date(sortedEntries[sortedEntries.length - 1].timestamp);
+        
+        // Calculate months between first and last entry
+        const monthsDiff = ((lastEntry.getFullYear() - firstEntry.getFullYear()) * 12) + 
+                          (lastEntry.getMonth() - firstEntry.getMonth()) + 1;
+        
+        return svtEntries.length / Math.max(monthsDiff, 1);
+    }
+
+    getMostActiveDay(data) {
+        const dayCount = {};
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
+        data.forEach(entry => {
+            const date = new Date(entry.timestamp);
+            const dayName = dayNames[date.getDay()];
+            dayCount[dayName] = (dayCount[dayName] || 0) + 1;
+        });
+        
+        let mostActiveDay = '-';
+        let maxCount = 0;
+        
+        Object.entries(dayCount).forEach(([day, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                mostActiveDay = day;
+            }
+        });
+        
+        return mostActiveDay;
+    }
+
+    getMostCommonSVTTime(data) {
+        const svtEntries = data.filter(entry => entry.type === 'SVT Episode');
+        
+        if (svtEntries.length === 0) return '-';
+        
+        const timeSlots = {
+            'Morning (6-12)': 0,
+            'Afternoon (12-18)': 0,
+            'Evening (18-24)': 0,
+            'Night (0-6)': 0
+        };
+        
+        svtEntries.forEach(entry => {
+            const hour = new Date(entry.timestamp).getHours();
+            
+            if (hour >= 6 && hour < 12) {
+                timeSlots['Morning (6-12)']++;
+            } else if (hour >= 12 && hour < 18) {
+                timeSlots['Afternoon (12-18)']++;
+            } else if (hour >= 18 && hour < 24) {
+                timeSlots['Evening (18-24)']++;
+            } else {
+                timeSlots['Night (0-6)']++;
+            }
+        });
+        
+        let mostCommonTime = '-';
+        let maxCount = 0;
+        
+        Object.entries(timeSlots).forEach(([timeSlot, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                mostCommonTime = timeSlot;
+            }
+        });
+        
+        return mostCommonTime;
+    }
+
+    calculateAverageSVTDuration(svtEntries) {
+        const durationsInMinutes = [];
+        
+        svtEntries.forEach(entry => {
+            if (entry.details.duration) {
+                // Extract minutes from duration string (e.g., "3 minutes", "1 minute")
+                const match = entry.details.duration.match(/(\d+)/);
+                if (match) {
+                    durationsInMinutes.push(parseInt(match[1]));
+                }
+            }
+        });
+        
+        if (durationsInMinutes.length === 0) return '-';
+        
+        const average = durationsInMinutes.reduce((sum, duration) => sum + duration, 0) / durationsInMinutes.length;
+        return `${average.toFixed(1)} min`;
+    }
+
+    getDaysSinceLastEntry(data, type) {
+        const entries = data
+            .filter(entry => entry.type === type)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        if (entries.length === 0) return '-';
+        
+        const lastEntry = new Date(entries[0].timestamp);
+        const now = new Date();
+        const diffTime = now.getTime() - lastEntry.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return '1 day';
+        return `${diffDays} days`;
+    }
+
+    // Mobile UX Enhancements
+    initMobileEnhancements() {
+        // Detect if user is on mobile
+        this.isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (this.isMobile) {
+            // Add mobile-specific class
+            document.body.classList.add('mobile-device');
+            
+            // Handle orientation changes
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    if (this.currentView === 'calendar') {
+                        this.renderCalendar();
+                    } else if (this.currentView === 'analytics') {
+                        this.renderAnalytics();
+                    }
+                }, 100);
+            });
+            
+            // Improve scroll behavior for modals
+            this.setupMobileModalScrolling();
+            
+            // Add swipe gesture for calendar navigation on mobile
+            this.setupCalendarSwipeGestures();
+        }
+        
+        // Handle window resize for responsive updates
+        window.addEventListener('resize', this.debounce(() => {
+            this.isMobile = window.innerWidth <= 768;
+            if (this.currentView === 'calendar') {
+                this.renderCalendar();
+            }
+        }, 250));
+    }
+
+    setupMobileModalScrolling() {
+        // Prevent background scrolling when modal is open
+        const originalShowEditModal = this.showEditModal.bind(this);
+        const originalCloseEditModal = this.closeEditModal.bind(this);
+        const originalShowConfirmModal = this.showConfirmModal.bind(this);
+        const originalCloseConfirmModal = this.closeConfirmModal.bind(this);
+        const originalShowDayModal = this.showDayModal.bind(this);
+        const originalCloseDayModal = this.closeDayModal.bind(this);
+
+        this.showEditModal = () => {
+            originalShowEditModal();
+            if (this.isMobile) {
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+            }
+        };
+
+        this.closeEditModal = () => {
+            originalCloseEditModal();
+            if (this.isMobile) {
+                document.body.style.position = '';
+                document.body.style.width = '';
+            }
+        };
+
+        this.showConfirmModal = () => {
+            originalShowConfirmModal();
+            if (this.isMobile) {
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+            }
+        };
+
+        this.closeConfirmModal = () => {
+            originalCloseConfirmModal();
+            if (this.isMobile) {
+                document.body.style.position = '';
+                document.body.style.width = '';
+            }
+        };
+
+        // Override showDayModal to include mobile scroll prevention
+        this.showDayModal = (date, entries) => {
+            originalShowDayModal(date, entries);
+            if (this.isMobile) {
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+            }
+        };
+
+        this.closeDayModal = () => {
+            originalCloseDayModal();
+            if (this.isMobile) {
+                document.body.style.position = '';
+                document.body.style.width = '';
+            }
+        };
+    }
+
+    setupCalendarSwipeGestures() {
+        if (!this.isMobile) return;
+
+        const calendarGrid = document.getElementById('calendar-grid');
+        let startX = 0;
+        let endX = 0;
+        const minSwipeDistance = 50;
+
+        calendarGrid.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+
+        calendarGrid.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            const distance = Math.abs(endX - startX);
+            
+            if (distance > minSwipeDistance) {
+                if (endX < startX) {
+                    // Swipe left - next month
+                    this.navigateMonth(1);
+                } else {
+                    // Swipe right - previous month
+                    this.navigateMonth(-1);
+                }
+            }
+        }, { passive: true });
+    }
+
+    // Utility function for debouncing resize events
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // ...existing code...
 }
 
 // Add CSS animations for messages
