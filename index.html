@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Wellness Logger</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Personal Wellness Logger</h1>
+            <p>Track your health events privately in your browser</p>
+        </header>
+
+        <main>
+            <!-- View Toggle -->
+            <section class="view-toggle">
+                <div class="toggle-buttons">
+                    <button id="list-view-btn" class="toggle-btn active">
+                        <span class="icon">📋</span>
+                        List View
+                    </button>
+                    <button id="calendar-view-btn" class="toggle-btn">
+                        <span class="icon">📅</span>
+                        Calendar View
+                    </button>
+                </div>
+            </section>
+
+            <!-- Quick Log Buttons -->
+            <section class="quick-log">
+                <h2>Quick Log</h2>
+                <div class="button-group">
+                    <button id="log-exercise" class="log-btn exercise-btn">
+                        <span class="icon">💪</span>
+                        Log Exercise
+                    </button>
+                    <button id="log-svt" class="log-btn svt-btn">
+                        <span class="icon">❤️</span>
+                        Log SVT Episode
+                    </button>
+                    <button id="log-medication" class="log-btn medication-btn">
+                        <span class="icon">💊</span>
+                        Log SVT Medication
+                    </button>
+                </div>
+            </section>
+
+            <!-- Data Management -->
+            <section class="data-management">
+                <h2>Data Management</h2>
+                <div class="button-group">
+                    <button id="export-data" class="action-btn">
+                        <span class="icon">📤</span>
+                        Export Data
+                    </button>
+                    <button id="import-data" class="action-btn">
+                        <span class="icon">📥</span>
+                        Import Data
+                    </button>
+                    <input type="file" id="file-input" accept=".json" style="display: none;">
+                </div>
+            </section>
+
+            <!-- Calendar View -->
+            <section id="calendar-section" class="calendar-view" style="display: none;">
+                <div class="calendar-header">
+                    <button id="prev-month" class="nav-btn">‹</button>
+                    <h2 id="calendar-title">January 2025</h2>
+                    <button id="next-month" class="nav-btn">›</button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar will be generated here -->
+                </div>
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot exercise"></span>
+                        Exercise
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot svt"></span>
+                        SVT Episode
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot medication"></span>
+                        Medication
+                    </div>
+                </div>
+            </section>
+
+            <!-- Log Entries (List View) -->
+            <section id="list-section" class="log-entries">
+                <h2>Log History</h2>
+                <div id="entries-container">
+                    <p class="no-entries">No entries yet. Start logging your wellness events!</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Edit Entry</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <form id="edit-form">
+                <div class="form-group">
+                    <label for="edit-date">Date:</label>
+                    <input type="date" id="edit-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-time">Time:</label>
+                    <input type="time" id="edit-time" required>
+                </div>
+                <div class="form-group" id="duration-group" style="display: none;">
+                    <label for="edit-duration">Duration:</label>
+                    <input type="text" id="edit-duration" placeholder="e.g., 5 minutes">
+                </div>
+                <div class="form-group" id="dosage-group" style="display: none;">
+                    <label for="edit-dosage">Dosage:</label>
+                    <input type="text" id="edit-dosage" placeholder="e.g., 1/2 tablet">
+                </div>
+                <div class="form-group">
+                    <label for="edit-comments">Comments:</label>
+                    <textarea id="edit-comments" rows="3" placeholder="Optional notes..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-edit" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+            </div>
+            <p>Are you sure you want to delete this entry? This action cannot be undone.</p>
+            <div class="form-actions">
+                <button type="button" id="cancel-delete" class="btn-secondary">Cancel</button>
+                <button type="button" id="confirm-delete" class="btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day Detail Modal -->
+    <div id="day-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="day-modal-title">Entries for Date</h3>
+                <button class="close-btn" id="close-day-modal">&times;</button>
+            </div>
+            <div id="day-entries" class="day-entries">
+                <!-- Day entries will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
