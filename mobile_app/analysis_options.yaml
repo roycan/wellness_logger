@@ -1,0 +1,33 @@
+# Analysis options for the Wellness Logger mobile app.
+# 
+# This file configures the Dart analyzer to enforce code quality standards
+# and maintain consistency across the codebase.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  # Exclude generated files and build outputs
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    - "**/generated_plugin_registrant.dart"
+    - "build/**"
+    - "lib/generated/**"
+
+linter:
+  rules:
+    # Additional rules for better code quality
+    - prefer_const_constructors
+    - prefer_const_constructors_in_immutables
+    - prefer_const_literals_to_create_immutables
+    - prefer_final_fields
+    - prefer_final_locals
+    - use_key_in_widget_constructors
+    - require_trailing_commas
+    - sort_child_properties_last
+    - always_declare_return_types
+    - avoid_print
+    - avoid_unnecessary_containers
+    - prefer_single_quotes
+    - use_build_context_synchronously

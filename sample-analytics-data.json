@@ -1,0 +1,86 @@
+[
+  {
+    "id": "1717891200000abc123",
+    "type": "Exercise",
+    "timestamp": "2025-06-08T07:00:00.000Z",
+    "details": {
+      "comments": "Morning jog, 5km route"
+    }
+  },
+  {
+    "id": "1717977600000def456",
+    "type": "Exercise",
+    "timestamp": "2025-06-09T07:30:00.000Z",
+    "details": {
+      "comments": "Gym workout - chest and triceps"
+    }
+  },
+  {
+    "id": "1718064000000ghi789",
+    "type": "Exercise",
+    "timestamp": "2025-06-10T08:00:00.000Z",
+    "details": {
+      "comments": "Morning run around neighborhood"
+    }
+  },
+  {
+    "id": "1718125200000jkl012",
+    "type": "SVT Episode",
+    "timestamp": "2025-06-10T18:45:00.000Z",
+    "details": {
+      "duration": "2 minutes",
+      "comments": "Started while watching TV"
+    }
+  },
+  {
+    "id": "1718126100000mno345",
+    "type": "Medication",
+    "timestamp": "2025-06-10T19:00:00.000Z",
+    "details": {
+      "dosage": "1/2 tablet",
+      "comments": "Tambocor after SVT episode"
+    }
+  },
+  {
+    "id": "1718150400000pqr678",
+    "type": "Exercise",
+    "timestamp": "2025-06-11T15:00:00.000Z",
+    "details": {
+      "comments": "Afternoon bike ride"
+    }
+  },
+  {
+    "id": "1718236800000stu901",
+    "type": "Exercise",
+    "timestamp": "2025-06-12T07:00:00.000Z",
+    "details": {
+      "comments": "Morning yoga session"
+    }
+  },
+  {
+    "id": "1718298000000vwx234",
+    "type": "SVT Episode",
+    "timestamp": "2025-06-12T14:00:00.000Z",
+    "details": {
+      "duration": "1 minute",
+      "comments": "Brief episode at work"
+    }
+  },
+  {
+    "id": "1718298900000yz567",
+    "type": "Medication",
+    "timestamp": "2025-06-12T14:15:00.000Z",
+    "details": {
+      "dosage": "1/2 tablet",
+      "comments": "Tambocor after work episode"
+    }
+  },
+  {
+    "id": "1718323200000abc890",
+    "type": "Exercise",
+    "timestamp": "2025-06-13T14:00:00.000Z",
+    "details": {
+      "comments": "Weight training - legs and back"
+    }
+  }
+]

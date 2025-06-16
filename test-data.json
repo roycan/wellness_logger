@@ -1,0 +1,62 @@
+[
+  {
+    "id": "1718308800000abc123",
+    "type": "Exercise",
+    "timestamp": "2025-06-10T08:30:00.000Z",
+    "details": {
+      "comments": "Morning run around the neighborhood, felt great"
+    }
+  },
+  {
+    "id": "1718322000000def456",
+    "type": "SVT Episode",
+    "timestamp": "2025-06-10T18:45:00.000Z",
+    "details": {
+      "duration": "3 minutes",
+      "comments": "Started suddenly while watching TV, lasted longer than usual"
+    }
+  },
+  {
+    "id": "1718323800000ghi789",
+    "type": "Medication",
+    "timestamp": "2025-06-10T19:15:00.000Z",
+    "details": {
+      "dosage": "1/2 tablet",
+      "comments": "Tambocor after SVT episode"
+    }
+  },
+  {
+    "id": "1718395200000jkl012",
+    "type": "Exercise",
+    "timestamp": "2025-06-11T15:00:00.000Z",
+    "details": {
+      "comments": "Weight training at gym, upper body focus"
+    }
+  },
+  {
+    "id": "1718481600000mno345",
+    "type": "SVT Episode",
+    "timestamp": "2025-06-12T14:00:00.000Z",
+    "details": {
+      "duration": "1 minute",
+      "comments": "Brief episode during lunch break at work"
+    }
+  },
+  {
+    "id": "1718482500000pqr678",
+    "type": "Medication",
+    "timestamp": "2025-06-12T14:15:00.000Z",
+    "details": {
+      "dosage": "1/2 tablet",
+      "comments": "Tambocor taken after work SVT episode"
+    }
+  },
+  {
+    "id": "1718568000000stu901",
+    "type": "Exercise",
+    "timestamp": "2025-06-13T14:00:00.000Z",
+    "details": {
+      "comments": "Afternoon bike ride, 30 minutes"
+    }
+  }
+]
