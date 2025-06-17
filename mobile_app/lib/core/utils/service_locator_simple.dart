@@ -1,5 +1,11 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../../data/datasources/hive_local_data_source.dart';
+import '../../data/datasources/local_data_source.dart';
+import '../../data/repositories/wellness_repository_impl.dart';
+import '../../domain/repositories/wellness_repository.dart';
 
 /// Service locator for dependency injection using GetIt.
 /// 
@@ -22,8 +28,13 @@ final GetIt serviceLocator = GetIt.instance;
 /// 
 /// Order of initialization:
 /// 1. Core services (Logger)
-/// 2. Additional services will be added in Phase 1
-Future<void> setupServiceLocator() async {
+/// 2. Data layer services (Local storage, Data sources)
+/// 3. Domain layer services (Repositories)
+/// 4. Additional services will be added in later phases
+/// 
+/// [testDirectory] - Optional directory for testing. When provided, 
+/// Hive will use this directory instead of the default documents directory.
+Future<void> setupServiceLocator({String? testDirectory}) async {
   final logger = Logger(
     printer: PrettyPrinter(
       methodCount: 2,
@@ -42,12 +53,29 @@ Future<void> setupServiceLocator() async {
     // Logger (singleton)
     serviceLocator.registerLazySingleton<Logger>(() => logger);
     
-    // TODO: Additional services will be added in Phase 1:
-    // - Local Storage Service
-    // - Analytics Service  
-    // - Export Service
-    // - Repositories
-    // - Use Cases
+    // === DATA LAYER SERVICES ===
+    
+    // Note: Hive initialization is handled by HiveLocalDataSource
+    // to support both production and test environments
+    
+    // Local Data Source (singleton)
+    serviceLocator.registerLazySingleton<LocalDataSource>(
+      () => HiveLocalDataSource(testDirectory: testDirectory),
+    );
+    
+    // === DOMAIN LAYER SERVICES ===
+    
+    // Wellness Repository (singleton)
+    serviceLocator.registerLazySingleton<WellnessRepository>(
+      () => WellnessRepositoryImpl(
+        localDataSource: serviceLocator<LocalDataSource>(),
+      ),
+    );
+    
+    // TODO: Additional services will be added in later phases:
+    // - Use Cases (Phase 3)
+    // - Analytics Service (Phase 6) 
+    // - Export Service (Phase 7)
     
     logger.i('✅ Service locator setup completed successfully');
     

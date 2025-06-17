@@ -120,8 +120,12 @@ class AppUrls {
 class AppRegex {
   AppRegex._();
   
-  // Duration validation (e.g., "5 minutes", "1.5 hours")
-  static final RegExp duration = RegExp(r'^\d+(\.\d+)?\s*(min|minute|minutes|hr|hour|hours|sec|second|seconds)s?$', caseSensitive: false);
+  // Duration validation - supports simple and compound durations
+  // Examples: "5 minutes", "1.5 hours", "1 hour 30 minutes", "30 seconds"
+  static final RegExp duration = RegExp(
+    r'^(\d+(\.\d+)?\s*(min|minute|minutes|hr|hour|hours|sec|second|seconds)s?(\s+(and\s+)?\d+(\.\d+)?\s*(min|minute|minutes|hr|hour|hours|sec|second|seconds)s?)?)$',
+    caseSensitive: false,
+  );
   
   // Dosage validation - allows any non-empty text for flexible input
   static final RegExp dosage = RegExp(r'^.+$', caseSensitive: false);

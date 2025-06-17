@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wellness_logger_mobile/core/theme/app_theme.dart';
+import 'package:wellness_logger_mobile/domain/entities/wellness_entry.dart';
+import 'package:wellness_logger_mobile/domain/entities/svt_episode.dart';
+import 'package:wellness_logger_mobile/domain/entities/analytics_data.dart';
 
 /// Test helper utilities for the Wellness Logger app.
 /// 
@@ -173,22 +176,49 @@ class TestDataFactory {
     });
   }
   
-  /// Creates test analytics data.
-  static Map<String, dynamic> createTestAnalyticsData() {
-    return {
-      'currentExerciseStreak': 5,
-      'svtEpisodesThisMonth': 3,
-      'medicationsTakenThisMonth': 15,
-      'totalEntries': 50,
-      'averageSVTEpisodesPerMonth': 2.5,
-      'mostActiveDay': 'Monday',
-      'mostCommonSVTTime': '14:30',
-      'exerciseFrequency': 0.8,
-      'daysSinceLastSVT': 5,
-      'averageEpisodeDuration': '2 minutes',
-      'weeklyExerciseAverage': 4.2,
-      'medicationAdherence': 0.95,
-    };
+  /// Creates a sample SVT episode for testing.
+  static SvtEpisode createSampleSvtEpisode({
+    String? id,
+    DateTime? timestamp,
+    String? comments,
+    String? duration,
+  }) {
+    return SvtEpisode(
+      id: id ?? 'test-svt-${DateTime.now().millisecondsSinceEpoch}',
+      timestamp: timestamp ?? DateTime.now(),
+      comments: comments ?? 'Test SVT episode for unit testing',
+      duration: duration ?? '15 minutes',
+    );
+  }
+
+  /// Creates a sample analytics data for testing.
+  static AnalyticsData createSampleAnalyticsData({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final now = DateTime.now();
+    return AnalyticsData(
+      startDate: startDate ?? now.subtract(const Duration(days: 30)),
+      endDate: endDate ?? now,
+      totalSvtEpisodes: 5,
+      averageEpisodeDuration: 900.0, // 15 minutes in seconds
+      episodesThisWeek: 2,
+      episodesThisMonth: 5,
+      totalExerciseSessions: 10,
+      averageExerciseDuration: 1800.0, // 30 minutes in seconds
+      exerciseSessionsThisWeek: 3,
+      exerciseSessionsThisMonth: 10,
+      totalMedicationTaken: 15,
+      medicationTakenThisWeek: 4,
+      medicationTakenThisMonth: 15,
+      adherenceRate: 0.85,
+      svtTriggerPatterns: {'stress': 3, 'caffeine': 2},
+      exerciseTypeFrequency: {'running': 6, 'walking': 4},
+      insights: ['Good exercise consistency', 'Monitor caffeine intake'],
+      totalEntries: 30,
+      dataCompleteness: 0.95,
+      lastUpdated: now,
+    );
   }
 }
 

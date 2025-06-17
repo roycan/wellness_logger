@@ -59,6 +59,7 @@ dev_dependencies:
   
   # Testing
   mockito: ^5.4.2
+  mocktail: ^1.0.1
   bloc_test: ^9.1.5
   golden_toolkit: ^0.15.0
   integration_test:
