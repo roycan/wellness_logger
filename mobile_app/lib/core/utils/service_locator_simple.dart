@@ -1,11 +1,10 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../data/datasources/hive_local_data_source.dart';
 import '../../data/datasources/local_data_source.dart';
 import '../../data/repositories/wellness_repository_impl.dart';
-import '../../domain/repositories/wellness_repository.dart';
+import '../../domain/repositories/wellness_repository_simple.dart';
 
 /// Service locator for dependency injection using GetIt.
 /// 
@@ -66,11 +65,19 @@ Future<void> setupServiceLocator({String? testDirectory}) async {
     // === DOMAIN LAYER SERVICES ===
     
     // Wellness Repository (singleton)
-    serviceLocator.registerLazySingleton<WellnessRepository>(
+    serviceLocator.registerLazySingleton<WellnessRepositorySimple>(
       () => WellnessRepositoryImpl(
         localDataSource: serviceLocator<LocalDataSource>(),
       ),
     );
+    
+    // Initialize the repository
+    final repository = serviceLocator<WellnessRepositorySimple>();
+    final initResult = await repository.initialize();
+    if (!initResult) {
+      throw Exception('Failed to initialize WellnessRepository');
+    }
+    logger.i('📦 Repository initialized successfully');
     
     // TODO: Additional services will be added in later phases:
     // - Use Cases (Phase 3)

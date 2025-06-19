@@ -12,7 +12,7 @@ import '../../domain/entities/wellness_entry.dart';
 /// - Easy to test with mock implementations
 /// - Extensible for future features
 /// - Offline-first with local storage
-abstract class WellnessRepository {
+abstract class WellnessRepositorySimple {
   // === LIFECYCLE ===
   
   /// Initializes the repository and sets up storage.

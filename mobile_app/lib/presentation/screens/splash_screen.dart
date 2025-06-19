@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_constants.dart';
+import '../../core/constants/app_constants.dart';
+import 'main_navigation_screen.dart';
 
 /// Splash screen displayed during app initialization.
 /// 
@@ -91,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
-  /// Shows a welcome message after initialization.
+  /// Shows a welcome message after initialization, then navigates to main app.
   void _showWelcomeMessage() {
     showDialog(
       context: context,
@@ -100,16 +101,28 @@ class _SplashScreenState extends State<SplashScreen>
         title: const Text('Welcome to Wellness Logger!'),
         content: const Text(
           'Your personal health tracking app is ready.\n\n'
-          'Phase 0 setup is complete! 🎉\n\n'
-          'Next: Phase 1 will add data management and entry creation.',
+          'Phase 3: UI Foundation complete! 🎉\n\n'
+          'You can now navigate between screens and see the basic UI structure.',
           style: TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Got it!'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToMainApp();
+            },
+            child: const Text('Get Started!'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Navigates to the main application screen.
+  void _navigateToMainApp() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const MainNavigationScreen(),
       ),
     );
   }

@@ -8,12 +8,12 @@ import '../../domain/repositories/wellness_repository_simple.dart';
 import '../datasources/local_data_source.dart';
 import '../datasources/storage_exception.dart';
 
-/// Implementation of [WellnessRepository] using local data source.
+/// Implementation of [WellnessRepositorySimple] using local data source.
 /// 
 /// This repository acts as a bridge between the domain layer and data layer,
 /// providing business logic validation and error handling on top of the
 /// raw data operations.
-class WellnessRepositoryImpl implements WellnessRepository {
+class WellnessRepositoryImpl implements WellnessRepositorySimple {
   final LocalDataSource _localDataSource;
   bool _isInitialized = false;
 

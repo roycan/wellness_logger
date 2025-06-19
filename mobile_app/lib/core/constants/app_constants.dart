@@ -41,6 +41,9 @@ class AppConstants {
   static const String entryTypeExercise = 'Exercise';
   static const String entryTypeMedication = 'Medication';
   
+  // Alternative naming for backwards compatibility
+  static const String entryTypeSvt = entryTypeSVT;
+  
   static const List<String> entryTypes = [
     entryTypeSVT,
     entryTypeExercise,

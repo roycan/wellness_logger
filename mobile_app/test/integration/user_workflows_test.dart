@@ -17,7 +17,7 @@ import 'package:wellness_logger_mobile/domain/repositories/wellness_repository_s
 /// Following our Testing Philosophy: Test what would embarrass us if it broke.
 void main() {
   group('Wellness Logger Integration Tests', () {
-    late WellnessRepository repository;
+    late WellnessRepositorySimple repository;
     late HiveLocalDataSource dataSource;
     late Directory tempDir;
 

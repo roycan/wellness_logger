@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -149,6 +150,3 @@ class WellnessLoggerApp extends StatelessWidget {
     );
   }
 }
-
-/// Debug flag for development builds
-const bool kDebugMode = bool.fromEnvironment('dart.vm.product') == false;
