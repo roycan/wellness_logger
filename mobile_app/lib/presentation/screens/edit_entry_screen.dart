@@ -4,6 +4,8 @@ import '../../domain/entities/svt_episode.dart';
 import '../../domain/entities/exercise.dart';
 import '../../domain/entities/medication.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/service_locator_simple.dart';
+import '../../domain/repositories/wellness_repository_simple.dart';
 import '../widgets/entry_forms/svt_form.dart';
 import '../widgets/entry_forms/exercise_form.dart';
 import '../widgets/entry_forms/medication_form.dart';
@@ -56,6 +58,73 @@ class EditEntryScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _showDeleteConfirmationDialog(BuildContext context) async {
+    final bool? shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Entry'),
+          content: Text('Are you sure you want to delete this $_entryTypeName entry? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete == true && context.mounted) {
+      await _deleteEntry(context);
+    }
+  }
+
+  Future<void> _deleteEntry(BuildContext context) async {
+    try {
+      final repository = serviceLocator<WellnessRepositorySimple>();
+      final success = await repository.deleteEntry(entry.id);
+      
+      if (context.mounted) {
+        if (success) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$_entryTypeName deleted successfully'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+          // Go back to previous screen
+          Navigator.of(context).pop(true); // Return true to indicate deletion
+        } else {
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Failed to delete entry. Please try again.'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting entry: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,6 +137,13 @@ class EditEntryScreen extends StatelessWidget {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _showDeleteConfirmationDialog(context),
+            tooltip: 'Delete $_entryTypeName',
+          ),
+        ],
       ),
       body: _buildForm(),
     );

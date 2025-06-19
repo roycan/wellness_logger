@@ -22,6 +22,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   
   // Settings values
   bool _notificationsEnabled = true;
+  bool _dailyReminders = true;
+  bool _medicationReminders = true;
+  bool _exerciseReminders = false;
+  String _reminderTime = '9:00 AM';
   String _exportFormat = 'CSV';
   bool _showTimeInEntries = true;
   bool _enableBackup = false;
@@ -32,6 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final List<String> _exportFormats = ['CSV', 'JSON', 'PDF'];
   final List<String> _durationOptions = ['< 1 minute', '1 minute', '2 minutes', '5 minutes', '10 minutes', '15 minutes', '30 minutes'];
   final List<String> _dosageOptions = ['1/4 tablet', '1/2 tablet', '1 tablet', '2 tablets', '1 ml', '2 ml', '5 ml'];
+  final List<String> _reminderTimeOptions = ['7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
 
   @override
   void initState() {
@@ -64,6 +69,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _loadSettings() {
     setState(() {
       _notificationsEnabled = _settingsBox.get('notifications_enabled', defaultValue: true);
+      _dailyReminders = _settingsBox.get('daily_reminders', defaultValue: true);
+      _medicationReminders = _settingsBox.get('medication_reminders', defaultValue: true);
+      _exerciseReminders = _settingsBox.get('exercise_reminders', defaultValue: false);
+      _reminderTime = _settingsBox.get('reminder_time', defaultValue: '9:00 AM');
       _exportFormat = _settingsBox.get('export_format', defaultValue: 'CSV');
       _showTimeInEntries = _settingsBox.get('show_time_in_entries', defaultValue: true);
       _enableBackup = _settingsBox.get('enable_backup', defaultValue: false);
@@ -138,6 +147,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _saveSetting('notifications_enabled', value);
               },
             ),
+            if (_notificationsEnabled) ...[
+              const SizedBox(height: 8),
+              _buildSwitchTile(
+                'Daily Reminders',
+                'Daily reminder to log wellness entries',
+                Icons.today,
+                _dailyReminders,
+                (value) {
+                  setState(() {
+                    _dailyReminders = value;
+                  });
+                  _saveSetting('daily_reminders', value);
+                },
+              ),
+              _buildSwitchTile(
+                'Medication Reminders',
+                'Reminders for medication timing',
+                Icons.medication,
+                _medicationReminders,
+                (value) {
+                  setState(() {
+                    _medicationReminders = value;
+                  });
+                  _saveSetting('medication_reminders', value);
+                },
+              ),
+              _buildSwitchTile(
+                'Exercise Reminders',
+                'Reminders to stay active',
+                Icons.fitness_center,
+                _exerciseReminders,
+                (value) {
+                  setState(() {
+                    _exerciseReminders = value;
+                  });
+                  _saveSetting('exercise_reminders', value);
+                },
+              ),
+              _buildDropdownTile(
+                'Reminder Time',
+                'Time for daily reminders',
+                Icons.schedule,
+                _reminderTime,
+                _reminderTimeOptions,
+                (value) {
+                  setState(() {
+                    _reminderTime = value!;
+                  });
+                  _saveSetting('reminder_time', value);
+                },
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 24),
