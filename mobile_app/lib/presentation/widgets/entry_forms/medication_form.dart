@@ -82,6 +82,7 @@ class _MedicationFormState extends State<MedicationForm> {
 
   Future<void> _saveEntry() async {
     if (!_formKey.currentState!.validate()) {
+
       return;
     }
 
@@ -90,6 +91,8 @@ class _MedicationFormState extends State<MedicationForm> {
     });
 
     try {
+
+      
       final repository = serviceLocator<WellnessRepositorySimple>();
       
       final DateTime timestamp = DateTime(
@@ -113,6 +116,8 @@ class _MedicationFormState extends State<MedicationForm> {
         await repository.createEntry(entry);
       }
 
+
+      
       if (mounted) {
         Navigator.of(context).pop(true); // Return true to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +128,7 @@ class _MedicationFormState extends State<MedicationForm> {
         );
       }
     } catch (e) {
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

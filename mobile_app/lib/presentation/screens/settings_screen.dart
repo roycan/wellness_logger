@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/debug_storage.dart';
+import '../../core/utils/debug_storage.dart';
+import '../../core/utils/service_locator_simple.dart';
+import '../../domain/repositories/wellness_repository_simple.dart';
 
 /// Settings screen for app configuration and user preferences.
 /// 
@@ -304,6 +308,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 24),
         _buildSection(
+          '🔍 DEBUG INFO',
+          [
+            _buildInfoTile(
+              'Hive Status',
+              Hive.isBoxOpen('wellness_entries') ? 'Box Open' : 'Box Closed',
+              Icons.storage,
+            ),
+            _buildInfoTile(
+              'Hive Path',
+              'Default path used',
+              Icons.folder,
+            ),
+            _buildActionTile(
+              'View Debug Log',
+              'Check app debug information',
+              Icons.bug_report,
+              _showDebugLog,
+            ),
+            _buildActionTile(
+              'Clear Debug Log',
+              'Clear debug information',
+              Icons.clear_all,
+              _clearDebugLog,
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        _buildSection(
           'About',
           [
             _buildInfoTile(
@@ -439,7 +471,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _clearData() {
+  void _clearData() async {
+
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -453,7 +487,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+
               Navigator.of(context).pop();
               _performClearData();
             },
@@ -484,7 +519,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _resetSettings() {
+  void _resetSettings() async {
+
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -498,7 +535,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+
               Navigator.of(context).pop();
               _performResetSettings();
             },
@@ -523,6 +561,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error resetting settings: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showDebugLog() async {
+    try {
+      final debugContent = await DebugStorage.readDebugInfo();
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Debug Log'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: SingleChildScrollView(
+              child: Text(
+                debugContent.isEmpty ? 'No debug information available' : debugContent,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error reading debug log: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _clearDebugLog() async {
+    try {
+      await DebugStorage.clearDebugInfo();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debug log cleared'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error clearing debug log: $e'),
           backgroundColor: Colors.red,
         ),
       );

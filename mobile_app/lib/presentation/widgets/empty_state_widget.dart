@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/service_locator_simple.dart';
+import '../../domain/repositories/wellness_repository_simple.dart';
 
 /// Widget for displaying empty states with consistent styling.
 /// 
@@ -72,9 +75,69 @@ class EmptyStateWidget extends StatelessWidget {
                 onPressed: onActionPressed,
                 child: Text(actionText!),
               ),
+            
+            // DEBUG INFO - Always visible in empty state
+            const SizedBox(height: AppConstants.largePadding),
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                border: Border.all(color: Colors.red, width: 2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    '🔍 DEBUG INFO',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDebugInfo(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDebugInfo() {
+    try {
+      final repository = serviceLocator<WellnessRepositorySimple>();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final isHiveOpen = Hive.isBoxOpen('wellness_entries');
+      
+      return Column(
+        children: [
+          Text(
+            'Repository ready: ${repository.isReady}',
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          ),
+          Text(
+            'Hive box open: $isHiveOpen',
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          ),
+          Text(
+            'Build: $timestamp',
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          ),
+          Text(
+            'App launch: ${DateTime.now().toString().substring(11, 19)}',
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          ),
+        ],
+      );
+    } catch (e) {
+      return Text(
+        'Debug error: $e',
+        style: const TextStyle(color: Colors.red, fontSize: 12),
+      );
+    }
   }
 }

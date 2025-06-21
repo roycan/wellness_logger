@@ -90,6 +90,7 @@ class _SvtFormState extends State<SvtForm> {
 
   Future<void> _saveEntry() async {
     if (!_formKey.currentState!.validate()) {
+
       return;
     }
 
@@ -98,6 +99,8 @@ class _SvtFormState extends State<SvtForm> {
     });
 
     try {
+
+      
       final repository = serviceLocator<WellnessRepositorySimple>();
       
       final DateTime timestamp = DateTime(
@@ -121,6 +124,8 @@ class _SvtFormState extends State<SvtForm> {
         await repository.createEntry(entry);
       }
 
+
+      
       if (mounted) {
         Navigator.of(context).pop(true); // Return true to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,6 +136,7 @@ class _SvtFormState extends State<SvtForm> {
         );
       }
     } catch (e) {
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

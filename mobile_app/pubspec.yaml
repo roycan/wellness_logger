@@ -19,6 +19,7 @@ dependencies:
   
   # Local Storage
   sqflite: ^2.3.0
+  path: ^1.8.3
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path_provider: ^2.1.1
@@ -47,6 +48,10 @@ dependencies:
   # Development & Debugging
   logger: ^2.0.2+1
   get_it: ^7.6.4
+  
+  # Production & Monitoring
+  package_info_plus: ^4.2.0
+  device_info_plus: ^9.1.1
   
   # Icons
   cupertino_icons: ^1.0.6

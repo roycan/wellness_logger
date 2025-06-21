@@ -7,6 +7,7 @@ import '../../domain/entities/exercise.dart';
 import '../../domain/repositories/wellness_repository_simple.dart';
 import '../datasources/local_data_source.dart';
 import '../datasources/storage_exception.dart';
+import '../../core/utils/debug_storage.dart';
 
 /// Implementation of [WellnessRepositorySimple] using local data source.
 /// 
@@ -28,15 +29,18 @@ class WellnessRepositoryImpl implements WellnessRepositorySimple {
       final result = await _localDataSource.initialize();
       if (result) {
         _isInitialized = true;
+        await DebugStorage.writeDebugInfo('REPOSITORY INITIALIZED successfully');
         debugPrint('WellnessRepository initialized successfully');
         return true;
       } else {
         _isInitialized = false;
+        await DebugStorage.writeDebugInfo('REPOSITORY INIT FAILED: LocalDataSource failed');
         debugPrint('Failed to initialize WellnessRepository: LocalDataSource initialization failed');
         return false;
       }
     } catch (e) {
       _isInitialized = false;
+      await DebugStorage.writeDebugInfo('REPOSITORY INIT ERROR: $e');
       debugPrint('Failed to initialize WellnessRepository: $e');
       return false;
     }
@@ -64,6 +68,9 @@ class WellnessRepositoryImpl implements WellnessRepositorySimple {
       _validateEntry(entry);
       
       await _localDataSource.saveEntry(entry);
+      
+      // DEBUG: Log entry creation
+      await DebugStorage.writeDebugInfo('SAVED entry: ${entry.id} type=${entry.type}');
       
       debugPrint('Successfully created entry: ${entry.id}');
     } on StorageException {
@@ -113,13 +120,18 @@ class WellnessRepositoryImpl implements WellnessRepositorySimple {
       _validateDateRange(startDate, endDate);
       _validatePaginationParams(limit, offset);
 
-      return await _localDataSource.getEntries(
+      final entries = await _localDataSource.getEntries(
         startDate: startDate,
         endDate: endDate,
         type: entryType,
         limit: limit,
         offset: offset ?? 0,
       );
+      
+      // DEBUG: Log how many entries were loaded
+      await DebugStorage.writeDebugInfo('LOADED ${entries.length} entries from storage');
+      
+      return entries;
     } on StorageException {
       rethrow;
     } catch (e) {

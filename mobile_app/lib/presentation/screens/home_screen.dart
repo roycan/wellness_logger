@@ -43,7 +43,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _errorMessage = null;
       });
 
+      // DEBUG: More comprehensive logging
+      debugPrint('🔍 HOME: Starting to load entries...');
+      debugPrint('🔍 HOME: Repository ready status: ${_repository.isReady}');
+      
       final entries = await _repository.getAllEntries();
+      
+      // DEBUG: Add debug info to see what's happening
+      debugPrint('🔍 HOME: Loaded ${entries.length} entries from repository');
+      for (int i = 0; i < entries.length && i < 3; i++) {
+        debugPrint('🔍 HOME: Entry $i: ${entries[i].comments ?? entries[i].type} - ${entries[i].timestamp}');
+      }
       
       // Sort by date (most recent first) and take the first 10
       final sortedEntries = List<WellnessEntry>.from(entries)
@@ -53,7 +63,10 @@ class _HomeScreenState extends State<HomeScreen> {
         _recentEntries = sortedEntries.take(10).toList();
         _isLoading = false;
       });
+      
+      debugPrint('🔍 HOME: UI updated with ${_recentEntries.length} recent entries');
     } catch (error) {
+      debugPrint('❌ HOME: Error loading entries: $error');
       setState(() {
         _errorMessage = error.toString();
         _isLoading = false;
@@ -182,21 +195,59 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _buildStatCard(
-              'Today',
-              todayEntries.toString(),
-              Icons.today,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Today',
+                  todayEntries.toString(),
+                  Icons.today,
+                ),
+              ),
+              const SizedBox(width: AppConstants.defaultPadding),
+              Expanded(
+                child: _buildStatCard(
+                  'Total',
+                  totalEntries.toString(),
+                  Icons.bar_chart,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppConstants.defaultPadding),
-          Expanded(
-            child: _buildStatCard(
-              'Total',
-              totalEntries.toString(),
-              Icons.bar_chart,
+          const SizedBox(height: 8),
+          // DEBUG INFO - Remove this later
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              border: Border.all(color: Colors.red),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '🔍 DEBUG: DATA PERSISTENCE TEST',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Repository ready: ${_repository.isReady}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
+                ),
+                Text(
+                  'Entries loaded: ${_recentEntries.length}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
+                ),
+                Text(
+                  'Build: ${DateTime.now().millisecondsSinceEpoch}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
+                ),
+              ],
             ),
           ),
         ],

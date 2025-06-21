@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#4CAF50" stroke="#2E7D32" stroke-width="8"/>
+  
+  <!-- Heart symbol (for wellness/health) -->
+  <path d="M256 400 C200 350, 120 280, 120 200 C120 160, 150 130, 190 130 C220 130, 240 150, 256 170 C272 150, 292 130, 322 130 C362 130, 392 160, 392 200 C392 280, 312 350, 256 400 Z" 
+        fill="white" opacity="0.9"/>
+  
+  <!-- Plus sign overlay (medical/add entry) -->
+  <rect x="240" y="180" width="32" height="120" fill="#2E7D32" rx="4"/>
+  <rect x="196" y="224" width="120" height="32" fill="#2E7D32" rx="4"/>
+  
+  <!-- Small pulse/wave pattern -->
+  <path d="M100 300 Q140 280, 180 300 T260 300 T340 300 T412 300" 
+        stroke="white" stroke-width="6" fill="none" opacity="0.7"/>
+</svg>

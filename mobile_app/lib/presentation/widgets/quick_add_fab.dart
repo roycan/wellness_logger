@@ -39,7 +39,7 @@ class _QuickAddFABState extends State<QuickAddFAB>
     super.dispose();
   }
 
-  void _toggleExpanded() {
+  void _toggleExpanded() async {
     if (_isExpanded) {
       _animationController.reverse();
     } else {
@@ -50,7 +50,7 @@ class _QuickAddFABState extends State<QuickAddFAB>
     });
   }
 
-  void _onEntryTypeSelected(String entryType) {
+  void _onEntryTypeSelected(String entryType) async {
     _toggleExpanded();
     
     // Determine which tab index to open based on entry type

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logger/logger.dart';
 
@@ -43,30 +44,33 @@ class HiveLocalDataSource implements LocalDataSource {
   @override
   Future<bool> initialize() async {
     try {
-      _logger.i('Initializing Hive local data source...');
+      _logger.i('🔄 Initializing Hive local data source...');
       
-      // Initialize Hive if not already done
-      if (!Hive.isAdapterRegistered(0)) {
-        if (_testDirectory != null) {
-          // For testing, use the provided directory
-          Hive.init(_testDirectory!);
-        } else {
-          // For production, use Flutter's document directory
-          await Hive.initFlutter();
-        }
+      // For production, always use Flutter's document directory
+      // Note: Hive.initFlutter() is safe to call multiple times
+      if (_testDirectory != null) {
+        // For testing, use the provided directory
+        Hive.init(_testDirectory!);
+      } else {
+        // For production, use Flutter's document directory
+        await Hive.initFlutter();
       }
+      
+      _logger.i('📂 Hive initialized, opening boxes...');
       
       // Open the boxes for data storage
       _entriesBox = await Hive.openBox<Map<dynamic, dynamic>>(_entriesBoxName);
       _analyticsBox = await Hive.openBox<Map<dynamic, dynamic>>(_analyticsBoxName);
       _metadataBox = await Hive.openBox<Map<dynamic, dynamic>>(_metadataBoxName);
       
+      _logger.i('📦 Opened Hive boxes: entries=${_entriesBox!.length}, analytics=${_analyticsBox!.length}');
+      
       _isInitialized = true;
       
       // Perform initial data integrity check
       await _performIntegrityCheck();
       
-      _logger.i('Hive local data source initialized successfully');
+      _logger.i('✅ Hive local data source initialized successfully');
       return true;
     } catch (error, stackTrace) {
       _logger.e('Failed to initialize Hive local data source: $error', stackTrace: stackTrace);
@@ -105,16 +109,39 @@ class HiveLocalDataSource implements LocalDataSource {
     
     try {
       final json = entry.toJson();
+      
+      // DEBUG: Log before saving
+      debugPrint('🔍 DATASOURCE: About to save entry ${entry.id} to Hive box');
+      debugPrint('🔍 DATASOURCE: Box has ${_entriesBox!.length} entries before save');
+      
       await _entriesBox!.put(entry.id, json);
+      
+      // CRITICAL: Ensure data is flushed to disk immediately
+      await _entriesBox!.flush();
+      
+      // DEBUG: Log after saving and flushing
+      debugPrint('🔍 DATASOURCE: Saved and flushed. Box now has ${_entriesBox!.length} entries');
+      debugPrint('🔍 DATASOURCE: Verifying save by reading back entry ${entry.id}');
+      
+      // Immediate verification - try to read it back
+      final verification = _entriesBox!.get(entry.id);
+      if (verification != null) {
+        debugPrint('✅ DATASOURCE: VERIFIED - Entry ${entry.id} is readable from box');
+      } else {
+        debugPrint('❌ DATASOURCE: CRITICAL ERROR - Entry ${entry.id} NOT found in box after save!');
+      }
       
       // Update metadata
       await _updateMetadata('lastSave', DateTime.now().toIso8601String());
       await _incrementCounter('totalEntries');
       
-      _logger.d('Saved entry: ${entry.id} (${entry.type})');
+      // Flush metadata box too
+      await _metadataBox!.flush();
+      
+      _logger.i('✅ SAVED AND FLUSHED entry: ${entry.id} (${entry.type})');
       return entry;
     } catch (error) {
-      _logger.e('Failed to save entry ${entry.id}: $error');
+      _logger.e('❌ Failed to save entry ${entry.id}: $error');
       throw StorageException.saveFailed(entry.id, error);
     }
   }
@@ -129,8 +156,25 @@ class HiveLocalDataSource implements LocalDataSource {
         return null;
       }
       
-      // Convert Map<dynamic, dynamic> to Map<String, dynamic>
-      final json = Map<String, dynamic>.from(jsonMap);
+      // CRITICAL FIX: Handle both Map<dynamic, dynamic> and Map<String, dynamic>
+      Map<String, dynamic> json;
+      try {
+        if (jsonMap is Map<String, dynamic>) {
+          json = jsonMap;
+        } else if (jsonMap is Map) {
+          // More defensive conversion for any Map type
+          json = <String, dynamic>{};
+          jsonMap.forEach((key, value) {
+            json[key.toString()] = value;
+          });
+        } else {
+          throw Exception('Unexpected data type: ${jsonMap.runtimeType}');
+        }
+      } catch (conversionError) {
+        _logger.e('Type conversion failed for entry $id: $conversionError');
+        throw conversionError;
+      }
+      
       return WellnessEntry.fromJson(json);
     } catch (error) {
       _logger.e('Failed to get entry $id: $error');
@@ -148,13 +192,43 @@ class HiveLocalDataSource implements LocalDataSource {
   }) async {
     _ensureInitialized();
     
+    // DEBUG: Comprehensive logging on app start
+    debugPrint('🔍 DATASOURCE: === LOADING ENTRIES FROM HIVE ===');
+    debugPrint('🔍 DATASOURCE: Box is open: ${_entriesBox!.isOpen}');
+    debugPrint('🔍 DATASOURCE: Box length: ${_entriesBox!.length}');
+    debugPrint('🔍 DATASOURCE: Box keys: ${_entriesBox!.keys.toList()}');
+    debugPrint('🔍 DATASOURCE: Box path: ${_entriesBox!.path}');
+    
+    _logger.i('🔍 Loading entries from Hive box (total: ${_entriesBox!.length})');
+    
     try {
       final allEntries = <WellnessEntry>[];
       
       // Get all entries from Hive
+      int index = 0;
       for (final jsonMap in _entriesBox!.values) {
         try {
-          final json = Map<String, dynamic>.from(jsonMap);
+          debugPrint('🔍 DATASOURCE: Processing entry $index: ${jsonMap.toString().substring(0, 50)}...');
+          
+          // CRITICAL FIX: Handle both Map<dynamic, dynamic> and Map<String, dynamic>
+          Map<String, dynamic> json;
+          try {
+            if (jsonMap is Map<String, dynamic>) {
+              json = jsonMap;
+            } else if (jsonMap is Map) {
+              // More defensive conversion for any Map type
+              json = <String, dynamic>{};
+              jsonMap.forEach((key, value) {
+                json[key.toString()] = value;
+              });
+            } else {
+              throw Exception('Unexpected data type: ${jsonMap.runtimeType}');
+            }
+          } catch (conversionError) {
+            debugPrint('❌ DATASOURCE: Type conversion failed for entry: $conversionError');
+            throw conversionError;
+          }
+          
           final entry = WellnessEntry.fromJson(json);
           
           // Apply filters
@@ -165,9 +239,12 @@ class HiveLocalDataSource implements LocalDataSource {
           if (endDate != null && entry.timestamp.isAfter(endDate)) continue;
           
           allEntries.add(entry);
+          debugPrint('✅ DATASOURCE: Successfully loaded entry ${entry.id} (${entry.type})');
         } catch (error) {
           _logger.w('Skipping corrupted entry: $error');
+          debugPrint('❌ DATASOURCE: Corrupted entry at index $index: $error');
         }
+        index++;
       }
       
       // Sort by timestamp (newest first)
@@ -178,10 +255,14 @@ class HiveLocalDataSource implements LocalDataSource {
       final endIndex = limit != null 
           ? (startIndex + limit).clamp(0, allEntries.length)
           : allEntries.length;
+
+      final result = allEntries.sublist(startIndex, endIndex);
+      debugPrint('🔍 DATASOURCE: Returning ${result.length} entries after filtering');
       
-      return allEntries.sublist(startIndex, endIndex);
+      return result;
     } catch (error) {
       _logger.e('Failed to get entries: $error');
+      debugPrint('❌ DATASOURCE: CRITICAL ERROR loading entries: $error');
       throw StorageException.readFailed('entries_query', error);
     }
   }
@@ -608,7 +689,14 @@ class HiveLocalDataSource implements LocalDataSource {
       for (final jsonMap in _entriesBox!.values) {
         totalEntries++;
         try {
-          final json = Map<String, dynamic>.from(jsonMap);
+          // CRITICAL FIX: Handle both Map<dynamic, dynamic> and Map<String, dynamic>
+          Map<String, dynamic> json;
+          if (jsonMap is Map<String, dynamic>) {
+            json = jsonMap;
+          } else {
+            // Convert Map<dynamic, dynamic> to Map<String, dynamic>
+            json = Map<String, dynamic>.from(jsonMap);
+          }
           WellnessEntry.fromJson(json);
           validEntries++;
         } catch (error) {

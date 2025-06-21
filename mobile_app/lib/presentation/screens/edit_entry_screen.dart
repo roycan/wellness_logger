@@ -59,6 +59,8 @@ class EditEntryScreen extends StatelessWidget {
   }
 
   Future<void> _showDeleteConfirmationDialog(BuildContext context) async {
+
+    
     final bool? shouldDelete = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -71,7 +73,10 @@ class EditEntryScreen extends StatelessWidget {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () async {
+
+                Navigator.of(context).pop(true);
+              },
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
@@ -94,6 +99,7 @@ class EditEntryScreen extends StatelessWidget {
       
       if (context.mounted) {
         if (success) {
+
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -104,6 +110,7 @@ class EditEntryScreen extends StatelessWidget {
           // Go back to previous screen
           Navigator.of(context).pop(true); // Return true to indicate deletion
         } else {
+
           // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -114,6 +121,7 @@ class EditEntryScreen extends StatelessWidget {
         }
       }
     } catch (e) {
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

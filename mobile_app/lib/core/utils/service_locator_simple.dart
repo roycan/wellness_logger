@@ -1,7 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 
-import '../../data/datasources/hive_local_data_source.dart';
+import '../../data/datasources/sqlite_local_data_source.dart';
 import '../../data/datasources/local_data_source.dart';
 import '../../data/repositories/wellness_repository_impl.dart';
 import '../../domain/repositories/wellness_repository_simple.dart';
@@ -59,7 +59,7 @@ Future<void> setupServiceLocator({String? testDirectory}) async {
     
     // Local Data Source (singleton)
     serviceLocator.registerLazySingleton<LocalDataSource>(
-      () => HiveLocalDataSource(testDirectory: testDirectory),
+      () => SQLiteLocalDataSource(testDirectory: testDirectory),
     );
     
     // === DOMAIN LAYER SERVICES ===

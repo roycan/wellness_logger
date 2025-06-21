@@ -15,12 +15,24 @@ import 'presentation/screens/splash_screen.dart';
 /// intake with offline functionality and comprehensive analytics.
 /// 
 /// Features:
+/// Main entry point for the Wellness Logger mobile application.
+/// 
+/// This app helps users track SVT episodes, exercise routines, and medication
+/// intake with offline functionality and comprehensive analytics.
+/// 
+/// Features:
 /// - Offline-first data storage using Hive
 /// - Clean Architecture with BLoC state management
 /// - Comprehensive health insights and analytics
 /// - CSV export functionality for medical consultations
 /// - Material Design 3 UI with accessibility support
+/// - Production-grade error handling and crash reporting
 void main() async {
+  await _initializeApp();
+}
+
+/// Initialize the application with all required services and configurations
+Future<void> _initializeApp() async {
   // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -30,29 +42,33 @@ void main() async {
       methodCount: 2,
       errorMethodCount: 8,
       lineLength: 120,
-      colors: true,
-      printEmojis: true,
-      printTime: true,
+      colors: !kReleaseMode,
+      printEmojis: !kReleaseMode,
     ),
   );
   logger.i('🚀 Starting Wellness Logger App');
   
   try {
-    // Initialize Hive for local storage
-    await Hive.initFlutter();
-    logger.i('📦 Hive initialized successfully');
+    
+    // Note: Hive initialization is handled by HiveLocalDataSource
+    // This ensures proper initialization order and test compatibility
+    logger.i('📦 Hive will be initialized by data source');
+    debugPrint('🔍 MAIN: Starting app initialization...');
     
     // Set preferred orientations (portrait only for better UX)
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    debugPrint('🔍 MAIN: Screen orientation set');
     
     // Initialize service locator (dependency injection)
     await setupServiceLocator();
     logger.i('🔧 Service locator configured');
+    debugPrint('🔍 MAIN: Service locator setup complete');
     
     // Run the app
+    debugPrint('🔍 MAIN: Starting Flutter app...');
     runApp(const WellnessLoggerApp());
     
   } catch (error, stackTrace) {
@@ -101,49 +117,6 @@ class WellnessLoggerApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      
-      // Accessibility and Error handling
-      builder: (context, child) {
-        // Configure error widget
-        ErrorWidget.builder = (FlutterErrorDetails errorDetails) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.bug_report, size: 64, color: Colors.orange),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Something went wrong',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  if (kDebugMode)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        errorDetails.exception.toString(),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        };
-        
-        // Return child with text scaling limits
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: MediaQuery.of(context).textScaler.clamp(
-              minScaleFactor: 0.8,
-              maxScaleFactor: 1.4,
-            ),
-          ),
-          child: child!,
-        );
-      },
       
       // Home screen
       home: const SplashScreen(),
