@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/utils/debug_storage.dart';
 import '../../core/utils/debug_storage.dart';
 import '../../core/utils/service_locator_simple.dart';
 import '../../domain/repositories/wellness_repository_simple.dart';
+import '../../data/services/settings_service.dart';
 
 /// Settings screen for app configuration and user preferences.
 /// 
@@ -21,7 +20,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late Box _settingsBox;
+  late SettingsService _settingsService;
   bool _isLoading = true;
   
   // Settings values
@@ -50,8 +49,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _initializeSettings() async {
     try {
-      _settingsBox = await Hive.openBox('settings');
-      _loadSettings();
+      _settingsService = serviceLocator<SettingsService>();
+      await _loadSettings();
       setState(() {
         _isLoading = false;
       });
@@ -70,25 +69,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _loadSettings() {
-    setState(() {
-      _notificationsEnabled = _settingsBox.get('notifications_enabled', defaultValue: true);
-      _dailyReminders = _settingsBox.get('daily_reminders', defaultValue: true);
-      _medicationReminders = _settingsBox.get('medication_reminders', defaultValue: true);
-      _exerciseReminders = _settingsBox.get('exercise_reminders', defaultValue: false);
-      _reminderTime = _settingsBox.get('reminder_time', defaultValue: '9:00 AM');
-      _exportFormat = _settingsBox.get('export_format', defaultValue: 'CSV');
-      _showTimeInEntries = _settingsBox.get('show_time_in_entries', defaultValue: true);
-      _enableBackup = _settingsBox.get('enable_backup', defaultValue: false);
-      _defaultSvtDuration = _settingsBox.get('default_svt_duration', defaultValue: '1 minute');
-      _defaultExerciseDuration = _settingsBox.get('default_exercise_duration', defaultValue: '10 minutes');
-      _defaultMedicationDosage = _settingsBox.get('default_medication_dosage', defaultValue: '1/2 tablet');
-    });
+  Future<void> _loadSettings() async {
+    _notificationsEnabled = await _settingsService.getBool('notifications_enabled', defaultValue: true);
+    _dailyReminders = await _settingsService.getBool('daily_reminders', defaultValue: true);
+    _medicationReminders = await _settingsService.getBool('medication_reminders', defaultValue: true);
+    _exerciseReminders = await _settingsService.getBool('exercise_reminders', defaultValue: false);
+    _reminderTime = await _settingsService.getString('reminder_time', defaultValue: '9:00 AM');
+    _exportFormat = await _settingsService.getString('export_format', defaultValue: 'CSV');
+    _showTimeInEntries = await _settingsService.getBool('show_time_in_entries', defaultValue: true);
+    _enableBackup = await _settingsService.getBool('enable_backup', defaultValue: false);
+    _defaultSvtDuration = await _settingsService.getString('default_svt_duration', defaultValue: '1 minute');
+    _defaultExerciseDuration = await _settingsService.getString('default_exercise_duration', defaultValue: '10 minutes');
+    _defaultMedicationDosage = await _settingsService.getString('default_medication_dosage', defaultValue: '1/2 tablet');
+    
+    setState(() {});
   }
 
   Future<void> _saveSetting(String key, dynamic value) async {
     try {
-      await _settingsBox.put(key, value);
+      if (value is bool) {
+        await _settingsService.setBool(key, value);
+      } else {
+        await _settingsService.setString(key, value.toString());
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -311,13 +314,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           '🔍 DEBUG INFO',
           [
             _buildInfoTile(
-              'Hive Status',
-              Hive.isBoxOpen('wellness_entries') ? 'Box Open' : 'Box Closed',
+              'Database Status',
+              'SQLite Database Active',
               Icons.storage,
             ),
             _buildInfoTile(
-              'Hive Path',
-              'Default path used',
+              'Storage Type',
+              'SQLite with Settings Service',
               Icons.folder,
             ),
             _buildActionTile(
@@ -549,21 +552,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _performResetSettings() async {
     try {
-      await _settingsBox.clear();
-      _loadSettings();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Settings reset to default'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      await _settingsService.clearAll();
+      await _loadSettings();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Settings reset to default'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error resetting settings: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error resetting settings: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

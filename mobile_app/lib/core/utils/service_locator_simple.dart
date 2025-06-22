@@ -5,6 +5,7 @@ import '../../data/datasources/sqlite_local_data_source.dart';
 import '../../data/datasources/local_data_source.dart';
 import '../../data/repositories/wellness_repository_impl.dart';
 import '../../domain/repositories/wellness_repository_simple.dart';
+import '../../data/services/settings_service.dart';
 
 /// Service locator for dependency injection using GetIt.
 /// 
@@ -62,6 +63,9 @@ Future<void> setupServiceLocator({String? testDirectory}) async {
       () => SQLiteLocalDataSource(testDirectory: testDirectory),
     );
     
+    // Settings Service (singleton)
+    serviceLocator.registerLazySingleton<SettingsService>(() => SettingsService());
+    
     // === DOMAIN LAYER SERVICES ===
     
     // Wellness Repository (singleton)
@@ -79,10 +83,12 @@ Future<void> setupServiceLocator({String? testDirectory}) async {
     }
     logger.i('📦 Repository initialized successfully');
     
-    // TODO: Additional services will be added in later phases:
-    // - Use Cases (Phase 3)
-    // - Analytics Service (Phase 6) 
-    // - Export Service (Phase 7)
+    // Initialize settings service
+    final settingsService = serviceLocator<SettingsService>();
+    await settingsService.initialize();
+    logger.i('⚙️ Settings Service initialized successfully');
+
+    // === ADDITIONAL SERVICES ===
     
     logger.i('✅ Service locator setup completed successfully');
     

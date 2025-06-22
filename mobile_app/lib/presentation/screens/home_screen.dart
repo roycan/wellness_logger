@@ -216,40 +216,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // DEBUG INFO - Remove this later
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              border: Border.all(color: Colors.red),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  '🔍 DEBUG: DATA PERSISTENCE TEST',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Repository ready: ${_repository.isReady}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
-                ),
-                Text(
-                  'Entries loaded: ${_recentEntries.length}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
-                ),
-                Text(
-                  'Build: ${DateTime.now().millisecondsSinceEpoch}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
