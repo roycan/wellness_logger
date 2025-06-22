@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/debug_storage.dart';
 import '../../core/utils/service_locator_simple.dart';
@@ -21,6 +25,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late SettingsService _settingsService;
+  late WellnessRepositorySimple _repository;
   bool _isLoading = true;
   
   // Settings values
@@ -50,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _initializeSettings() async {
     try {
       _settingsService = serviceLocator<SettingsService>();
+      _repository = serviceLocator<WellnessRepositorySimple>();
       await _loadSettings();
       setState(() {
         _isLoading = false;
@@ -295,6 +301,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _exportData,
             ),
             _buildActionTile(
+              'Import Data',
+              'Import wellness data from file',
+              Icons.file_upload,
+              _importData,
+            ),
+            _buildActionTile(
               'Clear Data',
               'Remove all wellness entries',
               Icons.delete_forever,
@@ -464,14 +476,247 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _exportData() {
-    // TODO: Implement data export functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export functionality will be implemented'),
-        backgroundColor: Colors.blue,
+  void _exportData() async {
+    try {
+      // Show export options dialog
+      final selectedFormat = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Export Data'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Choose export format:'),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.table_chart),
+                title: const Text('CSV (for doctors)'),
+                subtitle: const Text('Medical-friendly format'),
+                onTap: () => Navigator.of(context).pop('CSV'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.code),
+                title: const Text('JSON (for backup)'),
+                subtitle: const Text('Complete data backup'),
+                onTap: () => Navigator.of(context).pop('JSON'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+
+      if (selectedFormat == null) return;
+
+      // Show loading indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 16),
+              Text('Exporting data...'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      String data;
+      String filename;
+      String mimeType;
+
+      if (selectedFormat == 'CSV') {
+        data = await _repository.exportToCsv();
+        filename = 'wellness_data_${DateTime.now().toIso8601String().split('T')[0]}.csv';
+        mimeType = 'text/csv';
+      } else {
+        final jsonData = await _repository.exportToJson();
+        data = const JsonEncoder.withIndent('  ').convert(jsonData);
+        filename = 'wellness_backup_${DateTime.now().toIso8601String().split('T')[0]}.json';
+        mimeType = 'application/json';
+      }
+
+      if (data.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No data to export'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Save to temporary file and share
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/$filename');
+      await file.writeAsString(data);
+
+      // Share the file
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: mimeType)],
+        subject: selectedFormat == 'CSV' 
+          ? 'Wellness Data for Medical Review' 
+          : 'Wellness Data Backup',
+        text: selectedFormat == 'CSV'
+          ? 'Please find my wellness tracking data attached. This includes my SVT episodes, exercise sessions, and medication records.'
+          : 'Backup of wellness tracking data from ${DateTime.now().toLocal().toString().split(' ')[0]}',
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Data exported successfully as $selectedFormat'),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'Share Again',
+            onPressed: () async {
+              await Share.shareXFiles([XFile(file.path, mimeType: mimeType)]);
+            },
+          ),
+        ),
+      );
+
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _importData() async {
+    // Show information dialog about import process
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import Data'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'To import your backup data:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            Text('1. Open your backup JSON file'),
+            Text('2. Copy all the JSON content'),
+            Text('3. Tap "Paste & Import" below'),
+            Text('4. Paste the JSON data when prompted'),
+            SizedBox(height: 12),
+            Text(
+              'Note: This will merge with existing data. Duplicate entries will be updated.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _showImportDialog();
+            },
+            child: const Text('Paste & Import'),
+          ),
+        ],
       ),
     );
+  }
+
+  void _showImportDialog() async {
+    final TextEditingController controller = TextEditingController();
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Paste JSON Data'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 200,
+          child: TextField(
+            controller: controller,
+            maxLines: null,
+            expands: true,
+            decoration: const InputDecoration(
+              hintText: 'Paste your backup JSON data here...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null || result.trim().isEmpty) return;
+
+    try {
+      // Show loading indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 16),
+              Text('Importing data...'),
+            ],
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      final jsonData = jsonDecode(result) as Map<String, dynamic>;
+      await _repository.importFromJson(jsonData);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data imported successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Import failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _clearData() async {
@@ -505,14 +750,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _performClearData() async {
     try {
-      // TODO: Clear data from repository
+      // Show loading indicator
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Data clearing functionality will be implemented'),
-          backgroundColor: Colors.orange,
+          content: Row(
+            children: [
+              SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 16),
+              Text('Clearing all data...'),
+            ],
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // Clear data from repository
+      await _repository.clearAllEntries();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All wellness data has been cleared'),
+          backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error clearing data: $e'),
