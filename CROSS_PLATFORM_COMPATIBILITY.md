@@ -18,18 +18,30 @@ To maintain interoperability, both the web and mobile applications adhere to a s
 
 ### Entry Object Structure
 
-Each object within the `entries` array represents a single wellness log.
+Each object within the `entries` array represents a single wellness log entry.
 
 | Key           | Type     | Description                                                                 | Example                                   |
 | :------------ | :------- | :-------------------------------------------------------------------------- | :---------------------------------------- |
-| `id`          | `String` | A unique identifier for the log entry.                                      | `"log-1698399600000"`                     |
-| `date`        | `String` | The date of the log in `YYYY-MM-DD` format.                                 | `"2023-10-27"`                            |
-| `mood`        | `String` | The user's recorded mood.                                                   | `"Happy"`                                 |
-| `sleep`       | `Number` | Hours of sleep recorded.                                                    | `8`                                       |
-| `activities`  | `Array`  | A list of activities performed. Can be an array of strings.                 | `["Exercise", "Meditation"]`              |
-| `notes`       | `String` | Any additional notes or comments for the day.                               | `"Felt great after the morning workout."` |
-| `medications` | `Array`  | A list of medications taken. Each item is an object with `name` and `dosage`. | `[{"name": "Vitamin D", "dosage": "1000 IU"}]` |
-| `timestamp`   | `Number` | The epoch timestamp (in milliseconds) when the entry was created.           | `1698399600000`                           |
+| `id`          | `String` | A unique identifier for the log entry.                                      | `"1750652909142"`                         |
+| `type`        | `String` | The type of wellness entry (Exercise, SVT Episode, Medication).             | `"Exercise"`                              |
+| `timestamp`   | `String` | ISO 8601 timestamp indicating when the entry occurred.                      | `"2025-06-23T10:28:00.000"`               |
+| `details`     | `Object` | An object containing type-specific details for the entry.                   | `{"duration": "10 minutes"}`              |
+
+#### Details Object Properties
+
+The `details` object contains different properties based on the entry type:
+
+**For Exercise entries:**
+- `duration` (String): How long the exercise lasted (e.g., "10 minutes", "1 hour")
+- `comments` (String, optional): Additional notes about the exercise
+
+**For SVT Episode entries:**
+- `duration` (String): How long the episode lasted (e.g., "1 minute", "30 seconds")
+- `comments` (String, optional): Additional symptoms or notes
+
+**For Medication entries:**
+- `dosage` (String): The amount taken (e.g., "1/2 tablet", "10mg")
+- `comments` (String, optional): Additional notes about the medication
 
 ## Compatibility Notes
 

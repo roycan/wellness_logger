@@ -1,4 +1,5 @@
 // Personal Wellness Logger - Main JavaScript File
+// Updated: 2025-06-28 - Fixed showErrorMessage function
 
 class WellnessLogger {
     constructor() {
@@ -686,9 +687,11 @@ class WellnessLogger {
         reader.onload = (event) => {
             try {
                 let importedData = JSON.parse(event.target.result);
+                console.log('Raw imported data:', importedData);
                 
                 // Check for mobile app export format
                 if (importedData && typeof importedData === 'object' && !Array.isArray(importedData) && importedData.entries) {
+                    console.log('Mobile app export detected, extracting entries:', importedData.entries);
                     this.showSuccessMessage('Mobile app export detected. Importing entries.');
                     importedData = importedData.entries;
                 }
@@ -698,13 +701,17 @@ class WellnessLogger {
                     throw new Error('Invalid data format: Expected an array');
                 }
 
+                console.log('Final imported data array:', importedData);
+
                 // Basic validation of each entry
                 for (const entry of importedData) {
+                    console.log('Validating entry:', entry);
                     if (!entry.id || !entry.type || !entry.timestamp || !entry.details) {
-                        throw new Error('Invalid entry format in imported data');
+                        throw new Error(`Invalid entry format in imported data. Missing fields in entry: ${JSON.stringify(entry)}`);
                     }
                 }
 
+                console.log('All entries validated successfully');
                 this.saveData(importedData);
                 this.renderEntries();
                 if (this.currentView === 'calendar') {
@@ -715,6 +722,7 @@ class WellnessLogger {
                 this.showSuccessMessage(`Successfully imported ${importedData.length} entries!`);
                 
             } catch (error) {
+                console.error('Import error:', error);
                 this.showErrorMessage('Error importing data: ' + error.message);
             }
         };
@@ -1362,7 +1370,59 @@ class WellnessLogger {
         };
     }
 
-    // ...existing code...
+    // Message display functions
+    showSuccessMessage(message) {
+        this.showMessage(message, 'success');
+    }
+
+    showErrorMessage(message) {
+        this.showMessage(message, 'error');
+    }
+
+    showMessage(message, type = 'info') {
+        // Remove any existing messages
+        const existingMessage = document.querySelector('.message-toast');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+
+        // Create message element
+        const messageEl = document.createElement('div');
+        messageEl.className = `message-toast message-${type}`;
+        messageEl.textContent = message;
+
+        // Add styles
+        messageEl.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 10000;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+            font-size: 14px;
+            line-height: 1.4;
+        `;
+
+        // Add to page
+        document.body.appendChild(messageEl);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (messageEl.parentNode) {
+                messageEl.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageEl.parentNode) {
+                        messageEl.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
 }
 
 // Add CSS animations for messages
