@@ -653,7 +653,17 @@ class WellnessLogger {
 
     exportData() {
         const data = this.getData();
-        const dataStr = JSON.stringify(data, null, 2);
+        
+        // Create a structured export object for compatibility
+        const exportObject = {
+            version: '1.1.0', // Align with app versioning
+            exportedAt: new Date().toISOString(),
+            source: 'web-app',
+            totalEntries: data.length,
+            entries: data
+        };
+
+        const dataStr = JSON.stringify(exportObject, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
         
         const link = document.createElement('a');
@@ -675,8 +685,14 @@ class WellnessLogger {
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const importedData = JSON.parse(event.target.result);
+                let importedData = JSON.parse(event.target.result);
                 
+                // Check for mobile app export format
+                if (importedData && typeof importedData === 'object' && !Array.isArray(importedData) && importedData.entries) {
+                    this.showSuccessMessage('Mobile app export detected. Importing entries.');
+                    importedData = importedData.entries;
+                }
+
                 // Validate data structure
                 if (!Array.isArray(importedData)) {
                     throw new Error('Invalid data format: Expected an array');

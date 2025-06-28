@@ -7,6 +7,7 @@ The Wellness Logger now includes comprehensive **export and import functionality
 - **Share data with your doctor** in medical-friendly formats
 - **Restore data** when changing devices
 - **Keep comprehensive health records** for medical appointments
+- **Sync data between web and mobile apps**
 
 ---
 
@@ -30,8 +31,8 @@ The Wellness Logger now includes comprehensive **export and import functionality
   - Chronologically sorted (oldest first)
   - Professional medical formatting
 
-#### 💾 JSON Format (For Backup)
-- **Best for:** Complete data backup
+#### 💾 JSON Format (For Backup & Sync)
+- **Best for:** Complete data backup and synchronization
 - **Format:** Technical backup format
 - **Contains:** All data with full metadata
 - **Benefits:**
@@ -39,13 +40,14 @@ The Wellness Logger now includes comprehensive **export and import functionality
   - Can be imported back perfectly
   - Includes all technical details
   - Suitable for data migration
+  - Enables syncing between web and mobile apps
 
 ### How to Export
 
 1. **Tap "Export Data"** in Settings
 2. **Choose format:**
    - Select **CSV** for sharing with doctors
-   - Select **JSON** for backup purposes
+   - Select **JSON** for backup or syncing purposes
 3. **Wait for processing** (loading indicator appears)
 4. **Share the file** using the system share dialog:
    - Email to your doctor
@@ -65,6 +67,7 @@ The Wellness Logger now includes comprehensive **export and import functionality
 - Restoring data after app reinstall
 - Importing data from another device
 - Recovering from backup files
+- Syncing data between web and mobile apps
 
 ### Access Import Features
 1. Open **Settings** → **Actions** → **"Import Data"**
@@ -87,6 +90,45 @@ The Wellness Logger now includes comprehensive **export and import functionality
 - Check for success/error messages
 - Review your entries to confirm import
 - Duplicate entries are automatically updated
+
+---
+
+## 🌐 Cross-Platform Data Sync (Web & Mobile)
+
+The Wellness Logger now supports manual data synchronization between the web version and the mobile app using the JSON export/import feature. You can export from one platform and import to the other.
+
+**Important:** Syncing is a manual process. You need to export the file from one device and then import it onto the other. The import process will **overwrite** all data currently on the device.
+
+### Scenario 1: Syncing from Web App to Mobile App
+
+Use this when you have logged data on the web app and want to see it on your mobile device.
+
+1.  **On the Web App:**
+    *   Navigate to the "Data Management" section.
+    *   Click on **"Export All Data (JSON)"**.
+    *   A `wellness_log_...json` file will be saved to your computer.
+
+2.  **Transfer the File:**
+    *   Move this JSON file to your mobile device (e.g., via email, cloud storage, or a USB cable).
+
+3.  **On the Mobile App:**
+    *   Open the app and go to the settings or data management screen.
+    *   Tap the "Import Data" button.
+    *   Select the JSON file you transferred. Your mobile app will now contain the data from the web app.
+
+### Scenario 2: Syncing from Mobile App to Web App
+
+Use this when you have logged data on your mobile device and want to view or manage it on the web app.
+
+1.  **On the Mobile App:**
+    *   Go to the settings or data management screen.
+    *   Tap the "Export Data" button. This will generate a JSON file.
+    *   Save or share this file to your computer.
+
+2.  **On the Web App:**
+    *   Navigate to the "Data Management" section.
+    *   Click on **"Import from JSON"**.
+    *   Select the JSON file you exported from the mobile app. The web app will now be updated with your mobile data.
 
 ---
 
